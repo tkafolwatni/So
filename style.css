@@ -1,11 +1,11 @@
 /* style.css */
 body {
-  font-family: 'Tahoma', sans-serif;
+  font-family: 'Arial', sans-serif;
+  background-color: #f2f2f2;
   margin: 0;
   padding: 0;
-  background-color: #f2f2f2;
-  text-align: center;
   direction: rtl;
+  text-align: center;
 }
 
 .container {
@@ -14,28 +14,27 @@ body {
 
 h1 {
   font-size: 24px;
-  color: #222;
   margin-bottom: 20px;
+  color: #333;
 }
 
 .chess-board {
   display: grid;
-  grid-template-columns: repeat(8, 40px);
-  grid-template-rows: repeat(8, 40px);
-  gap: 0;
+  grid-template-columns: repeat(8, 45px);
+  grid-template-rows: repeat(8, 45px);
+  width: fit-content;
   margin: 0 auto;
-  width: 320px;
-  height: 320px;
   border: 2px solid #333;
 }
 
 .chess-cell {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 28px;
+  font-weight: bold;
   user-select: none;
 }
 
