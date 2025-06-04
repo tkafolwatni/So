@@ -1,78 +1,51 @@
-// chess.js
+import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.0.0-beta.1/+esm";
+import { Chessboard } from "https://cdn.jsdelivr.net/npm/cm-chessboard@8.6.4/+esm";
 
-// 🛡️ منع الاستخدام على الحاسوب
-if (window.innerWidth > 768) {
-  document.body.innerHTML = "";
-  throw new Error("الوصول مسموح من الهاتف فقط");
-}
+const boardElement = document.getElementById("chessBoard");
 
-// ♟️ إعداد رقعة الشطرنج
-const board = document.getElementById("chessBoard");
-let selected = null;
+const board = new Chessboard(boardElement, {
+  position: "start",
+  style: {
+    boardColor: "#000000",
+    borderType: "none",
+    pieces: {
+      file: "https://cdn.jsdelivr.net/npm/cm-chessboard@8.6.4/assets/pieces/staunty.svg",
+    },
+  },
+});
 
-// 🎯 مواقع البداية (فارغة كبنية عرض فقط)
-const initialBoard = [
-  ["r", "n", "b", "q", "k", "b", "n", "r"],
-  ["p", "p", "p", "p", "p", "p", "p", "p"],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""],
-  ["P", "P", "P", "P", "P", "P", "P", "P"],
-  ["R", "N", "B", "Q", "K", "B", "N", "R"]
-];
+const game = new Chess();
 
-// ♟️ توليد الرقعة
-function renderBoard() {
-  board.innerHTML = "";
-  for (let row = 0; row < 8; row++) {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "row";
-    for (let col = 0; col < 8; col++) {
-      const cell = document.createElement("div");
-      cell.className = "cell " + ((row + col) % 2 === 0 ? "white" : "black");
-      cell.dataset.row = row;
-      cell.dataset.col = col;
-      const piece = initialBoard[row][col];
-      cell.textContent = piece;
-      cell.addEventListener("click", onCellClick);
-      rowDiv.appendChild(cell);
+let secretMoves = ["e2e4", "g1f3", "d2d4"]; // الحركات السرية المطلوبة
+let moveHistory = [];
+
+board.enableMoveInput((event) => {
+  const move = {
+    from: event.squareFrom,
+    to: event.squareTo,
+    promotion: "q",
+  };
+
+  const result = game.move(move);
+  if (result) {
+    board.setPosition(game.fen());
+    moveHistory.push(move.from + move.to);
+
+    if (moveHistory.length > 3) {
+      moveHistory.shift();
     }
-    board.appendChild(rowDiv);
-  }
-}
 
-function onCellClick(e) {
-  const cell = e.target;
-  const row = parseInt(cell.dataset.row);
-  const col = parseInt(cell.dataset.col);
-
-  if (selected) {
-    const fromRow = selected.row;
-    const fromCol = selected.col;
-    const toRow = row;
-    const toCol = col;
-
-    // تنفيذ الحركة
-    const movedPiece = initialBoard[fromRow][fromCol];
-    initialBoard[toRow][toCol] = movedPiece;
-    initialBoard[fromRow][fromCol] = "";
-
-    // ✅ تحقق من الحركة الخاصة لتفعيل إنشاء حساب
     if (
-      movedPiece === "N" &&
-      fromRow === 7 && fromCol === 1 &&
-      toRow === 5 && toCol === 2
+      moveHistory.length === 3 &&
+      moveHistory[0] === secretMoves[0] &&
+      moveHistory[1] === secretMoves[1] &&
+      moveHistory[2] === secretMoves[2]
     ) {
-      // ♟️ هذه الحركة (Nb1-c3) تفتح التسجيل
-      localStorage.setItem("registrationAllowed", "true");
+      setTimeout(() => {
+        window.location.href = "secret.html";
+      }, 500);
     }
-
-    selected = null;
-    renderBoard();
   } else {
-    selected = { row, col };
+    board.setPosition(game.fen());
   }
-}
-
-document.addEventListener("DOMContentLoaded", renderBoard);
+});
