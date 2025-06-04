@@ -1,87 +1,115 @@
-// script.js - المنطق العام للواجهة السرية
+const boardElement = document.getElementById("chess-board");
 
-// تحميل الصفحة المناسبة عند الضغط على زر في القائمة
-const pages = document.querySelectorAll(".page");
-const navButtons = document.querySelectorAll(".sidebar button");
+const initialBoard = [
+  ["r", "n", "b", "q", "k", "b", "n", "r"],
+  ["p", "p", "p", "p", "p", "p", "p", "p"],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["P", "P", "P", "P", "P", "P", "P", "P"],
+  ["R", "N", "B", "Q", "K", "B", "N", "R"]
+];
 
-navButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    navButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
+const pieceSymbols = {
+  "r": "♜", "n": "♞", "b": "♝", "q": "♛", "k": "♚", "p": "♟",
+  "R": "♖", "N": "♘", "B": "♗", "Q": "♕", "K": "♔", "P": "♙"
+};
 
-    const pageId = btn.getAttribute("data-page");
-    pages.forEach((p) => p.classList.remove("active"));
-    document.getElementById(pageId).classList.add("active");
-  });
-});
+let selectedCell = null;
 
-// === نظام الصلاحيات ===
-const user = JSON.parse(localStorage.getItem("tk_user")) || null;
+function createBoard() {
+  boardElement.innerHTML = "";
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.classList.add((row + col) % 2 === 0 ? "light" : "dark");
+      cell.dataset.row = row;
+      cell.dataset.col = col;
 
-function hasPrivilege(level) {
-  if (!user) return false;
-  if (user.rank === "رئيس الحزب") return true;
-  if (level === "مساعد" && ["رئيس قسم العلاقات الخارجية", "أمين السر", "رئيس قسم العلاقات العامة", "المسؤول المالي"].includes(user.rank)) return true;
-  return false;
-}
+      const piece = initialBoard[row][col];
+      if (piece) {
+        cell.textContent = pieceSymbols[piece];
+        cell.classList.add("piece");
+      }
 
-// === واجهة الدردشة ===
-const chatInput = document.getElementById("chatInput");
-const chatBox = document.getElementById("chatBox");
-const destroyCode = "ككك";
-
-// تحميل الرسائل من localStorage
-function loadMessages() {
-  const messages = JSON.parse(localStorage.getItem("tk_chat") || "[]");
-  chatBox.innerHTML = "";
-  messages.forEach(msg => addMessage(msg));
-}
-
-// إضافة رسالة للصندوق
-function addMessage({ rank, time, text }) {
-  const div = document.createElement("div");
-  div.classList.add("chat-message");
-  div.innerHTML = `
-    <div class="meta">${rank} • ${time}</div>
-    <div>${text}</div>
-  `;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// حفظ الرسالة
-function saveMessage(text) {
-  const now = new Date();
-  const time = now.toLocaleString("ar-SY");
-  const messages = JSON.parse(localStorage.getItem("tk_chat") || "[]");
-  messages.push({ rank: user?.rank || "عضو", time, text });
-  localStorage.setItem("tk_chat", JSON.stringify(messages));
-  addMessage({ rank: user?.rank || "عضو", time, text });
-}
-
-// إرسال الرسالة أو تنفيذ كود التدمير
-chatInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && chatInput.value.trim() !== "") {
-    const val = chatInput.value.trim();
-    if (val === destroyCode) {
-      localStorage.removeItem("tk_chat");
-      chatBox.innerHTML = "<div style='color:red;'>تم مسح جميع الرسائل.</div>";
-    } else {
-      saveMessage(val);
+      cell.addEventListener("click", handleCellClick);
+      boardElement.appendChild(cell);
     }
-    chatInput.value = "";
   }
-});
+}
 
-loadMessages();
+function handleCellClick(e) {
+  const cell = e.currentTarget;
+  const row = parseInt(cell.dataset.row);
+  const col = parseInt(cell.dataset.col);
+  const piece = initialBoard[row][col];
 
-// === واجهات مخصصة بصلاحيات ===
-// منع عرض عناصر غير مصرح بها
-window.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[data-privilege='مساعد']").forEach(el => {
-    if (!hasPrivilege("مساعد")) el.style.display = "none";
+  clearHighlights();
+
+  if (selectedCell) {
+    const fromRow = parseInt(selectedCell.dataset.row);
+    const fromCol = parseInt(selectedCell.dataset.col);
+
+    // تنفيذ النقل
+    initialBoard[row][col] = initialBoard[fromRow][fromCol];
+    initialBoard[fromRow][fromCol] = "";
+    selectedCell = null;
+    createBoard();
+    return;
+  }
+
+  if (piece) {
+    selectedCell = cell;
+    highlightMoves(piece, row, col);
+  }
+}
+
+function highlightMoves(piece, row, col) {
+  const isWhite = piece === piece.toUpperCase();
+  const directions = {
+    "P": [[-1, 0]],  // white pawn
+    "p": [[1, 0]],   // black pawn
+    "N": [[-2, -1], [-2, 1], [2, -1], [2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2]],
+    "n": [[-2, -1], [-2, 1], [2, -1], [2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2]],
+    "K": [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]],
+    "k": [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+  };
+
+  let moves = [];
+
+  if (directions[piece]) {
+    for (const [dx, dy] of directions[piece]) {
+      const newRow = row + dx;
+      const newCol = col + dy;
+      if (isInsideBoard(newRow, newCol) && !isOwnPiece(newRow, newCol, isWhite)) {
+        moves.push([newRow, newCol]);
+      }
+    }
+  }
+
+  // تمييز الخانات القابلة للنقل
+  for (const [r, c] of moves) {
+    const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+    if (cell) cell.classList.add("highlight");
+  }
+}
+
+function isOwnPiece(row, col, isWhite) {
+  const target = initialBoard[row][col];
+  if (!target) return false;
+  return (isWhite && target === target.toUpperCase()) ||
+         (!isWhite && target === target.toLowerCase());
+}
+
+function isInsideBoard(row, col) {
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
+function clearHighlights() {
+  document.querySelectorAll(".highlight").forEach(cell => {
+    cell.classList.remove("highlight");
   });
-  document.querySelectorAll("[data-privilege='مشرف']").forEach(el => {
-    if (user?.rank !== "رئيس الحزب") el.style.display = "none";
-  });
-});
+}
+createBoard();
