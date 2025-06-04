@@ -56,6 +56,18 @@ function handleCellClick(e) {
     initialBoard[row][col] = initialBoard[fromRow][fromCol];
     initialBoard[fromRow][fromCol] = "";
     selectedCell = null;
+
+    // التحقق من الحركة السرية: ♘ من b1 إلى c3 (من [7][1] إلى [5][2])
+    if (
+      fromRow === 7 && fromCol === 1 &&
+      row === 5 && col === 2 &&
+      piece === "N"
+    ) {
+      // توجيه إلى الصفحة السرية
+      window.location.href = "secret.html";
+      return;
+    }
+
     createBoard();
     return;
   }
